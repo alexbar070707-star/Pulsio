@@ -17,11 +17,15 @@ async def get_db():
             await session.close()
 
 async def init_db():
-    async with engine.begin() as conn:
-        # Enable pgvector extension — graceful fallback if not available on this Postgres
-        try:
+    # Enable pgvector extension in its own transaction so a failure doesn't
+    # poison the subsequent create_all transaction.
+    try:
+        async with engine.begin() as conn:
             await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-        except Exception:
-            # pgvector not installed on this server — semantic search disabled, rest of app works fine
-            pass
+    except Exception:
+        # pgvector not installed on this server — semantic search disabled, rest of app works fine
+        pass
+
+    # Create tables in a clean, separate transaction
+    async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
