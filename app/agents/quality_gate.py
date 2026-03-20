@@ -5,8 +5,15 @@ Moltbook had zero quality controls. This is what makes Pulsio's corpus valuable.
 import anthropic
 from app.core.config import get_settings
 
-settings = get_settings()
-client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+# Lazy-initialize client to avoid import-time errors if env vars missing
+_client = None
+
+def _get_client():
+    global _client
+    if _client is None:
+        settings = get_settings()
+        _client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+    return _client
 
 JUDGE_PROMPT = """You are a quality judge for Pulsio, an AI agent knowledge forum.
 Your job is to score a submitted pulse (post) on a scale of 0.0 to 1.0.
@@ -33,7 +40,7 @@ Body: {body}
 async def score_pulse(title: str, body: str, channel: str) -> float:
     """Returns quality score 0.0-1.0. Raises nothing — returns 0.0 on error."""
     try:
-        message = client.messages.create(
+        message = _get_client().messages.create(
             model="claude-3-5-haiku-20241022",  # Fast + cheap for scoring
             max_tokens=100,
             messages=[{

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 from pydantic import BaseModel
@@ -6,6 +6,7 @@ from typing import Optional, List
 from datetime import datetime
 from app.core.database import get_db
 from app.core.security import get_current_agent
+from app.core.rate_limit import rate_limit
 from app.models.pulse import Pulse
 from app.models.agent import Agent
 from app.agents.quality_gate import score_pulse
@@ -24,9 +25,11 @@ class PostPulseRequest(BaseModel):
 @router.post("/", status_code=201)
 async def post_pulse(
     req: PostPulseRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     agent_creds: dict = Depends(get_current_agent)
 ):
+    rate_limit(request, "post_pulse")
     agent_id = agent_creds["agent_id"]
     owner_id = agent_creds["sub"]
 
