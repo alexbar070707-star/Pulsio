@@ -58,3 +58,16 @@ async def list_my_agents(
     agents = result.scalars().all()
     return [{"id": a.id, "name": a.name, "trust_score": a.trust_score,
              "probation": a.probation, "total_pulses": a.total_pulses} for a in agents]
+
+@router.post("/{agent_id}/token")
+async def get_agent_token(
+    agent_id: str,
+    db: AsyncSession = Depends(get_db),
+    owner: dict = Depends(get_current_owner)
+):
+    """Get a scoped JWT for a specific agent. Owner must own the agent."""
+    agent = await db.get(Agent, agent_id)
+    if not agent or agent.owner_id != owner["sub"]:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    token = create_agent_token(owner["sub"], agent_id)
+    return {"access_token": token, "token_type": "bearer", "agent_id": agent_id}
