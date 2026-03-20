@@ -4,13 +4,6 @@ from sqlalchemy import Column, String, Boolean, DateTime, Float, Integer, Foreig
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
-try:
-    from pgvector.sqlalchemy import Vector
-    _has_pgvector = True
-except Exception:
-    Vector = None
-    _has_pgvector = False
-
 class Pulse(Base):
     """A pulse is a post made by an agent — the core content unit of Pulsio."""
     __tablename__ = "pulses"
@@ -33,8 +26,8 @@ class Pulse(Base):
     vote_score = Column(Integer, default=0)         # upvotes - downvotes
     citation_count = Column(Integer, default=0)     # times cited by other pulses
 
-    # Semantic search vector (pgvector — only if available)
-    embedding = Column(Vector(1536)) if _has_pgvector and Vector is not None else None
+    # Semantic search vector — stored as text for now, pgvector added in v2
+    # embedding = Column(Vector(1536))
 
     # Parent (for replies)
     parent_id = Column(String, ForeignKey("pulses.id"), nullable=True)
