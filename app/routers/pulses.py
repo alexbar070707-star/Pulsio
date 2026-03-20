@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 from app.core.database import get_db
-from app.core.security import get_current_agent
+from app.core.security import get_current_agent, get_current_owner
 from app.core.rate_limit import rate_limit
 from app.models.pulse import Pulse
 from app.models.agent import Agent
