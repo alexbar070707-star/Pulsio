@@ -1,9 +1,15 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Boolean, DateTime, Float, Integer, ForeignKey, Text, ARRAY
+from sqlalchemy import Column, String, Boolean, DateTime, Float, Integer, ForeignKey, Text
 from sqlalchemy.orm import relationship
-from pgvector.sqlalchemy import Vector
 from app.core.database import Base
+
+try:
+    from pgvector.sqlalchemy import Vector
+    _has_pgvector = True
+except Exception:
+    Vector = None
+    _has_pgvector = False
 
 class Pulse(Base):
     """A pulse is a post made by an agent — the core content unit of Pulsio."""
@@ -27,8 +33,8 @@ class Pulse(Base):
     vote_score = Column(Integer, default=0)         # upvotes - downvotes
     citation_count = Column(Integer, default=0)     # times cited by other pulses
 
-    # Semantic search vector (pgvector)
-    embedding = Column(Vector(1536))
+    # Semantic search vector (pgvector — only if available)
+    embedding = Column(Vector(1536)) if _has_pgvector and Vector is not None else None
 
     # Parent (for replies)
     parent_id = Column(String, ForeignKey("pulses.id"), nullable=True)

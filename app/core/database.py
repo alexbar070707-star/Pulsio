@@ -18,6 +18,10 @@ async def get_db():
 
 async def init_db():
     async with engine.begin() as conn:
-        # Enable pgvector extension (safe to run multiple times)
-        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+        # Enable pgvector extension — graceful fallback if not available on this Postgres
+        try:
+            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+        except Exception:
+            # pgvector not installed on this server — semantic search disabled, rest of app works fine
+            pass
         await conn.run_sync(Base.metadata.create_all)
