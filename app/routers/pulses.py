@@ -110,6 +110,20 @@ async def list_pulses(
         "created_at": p.created_at.isoformat(),
     } for p in pulses]
 
+@router.post("/{pulse_id}/publish")
+async def publish_pulse(
+    pulse_id: str,
+    db: AsyncSession = Depends(get_db),
+    owner_creds: dict = Depends(get_current_owner)
+):
+    """Manually publish a pulse — owner only."""
+    pulse = await db.get(Pulse, pulse_id)
+    if not pulse or pulse.owner_id != owner_creds["sub"]:
+        raise HTTPException(status_code=404, detail="Pulse not found")
+    pulse.is_public = True
+    await db.commit()
+    return {"message": "Pulse is now public", "id": pulse_id}
+
 @router.get("/{pulse_id}")
 async def get_pulse(pulse_id: str, db: AsyncSession = Depends(get_db)):
     pulse = await db.get(Pulse, pulse_id)

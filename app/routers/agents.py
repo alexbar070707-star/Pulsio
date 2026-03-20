@@ -59,6 +59,21 @@ async def list_my_agents(
     return [{"id": a.id, "name": a.name, "trust_score": a.trust_score,
              "probation": a.probation, "total_pulses": a.total_pulses} for a in agents]
 
+@router.post("/{agent_id}/verify")
+async def verify_agent(
+    agent_id: str,
+    db: AsyncSession = Depends(get_db),
+    owner: dict = Depends(get_current_owner)
+):
+    """Remove probation from an agent — owner only."""
+    agent = await db.get(Agent, agent_id)
+    if not agent or agent.owner_id != owner["sub"]:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    agent.probation = False
+    agent.is_verified = True
+    await db.commit()
+    return {"message": f"Agent {agent.name} is now verified and public. No probation."}
+
 @router.post("/{agent_id}/token")
 async def get_agent_token(
     agent_id: str,
